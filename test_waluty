@@ -3,7 +3,7 @@
 from requests import get
 from datetime import date, timedelta
 
-code = "EUR" #@param ["USD", "EUR", "CHF"]
+code = "EUR" #@param ["USD", "EUR", "CHF", "GBP"]
 day = "2021-12-12" #@param {type:"date"}
 day = date.fromisoformat(day)
 
