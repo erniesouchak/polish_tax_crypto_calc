@@ -20,8 +20,6 @@ if resp.status_code != 404:
 else:
   print('Weekend')
   workday = day
-  url = f'http://api.nbp.pl/api/exchangerates/rates/a/{code}/{workday}/'
-  resp = get(url)
   while resp.status_code == 404:
     workday = workday - timedelta(days = 1)
     print(workday)
