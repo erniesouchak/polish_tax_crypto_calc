@@ -1,4 +1,5 @@
-import requests
+
+import nbp_req
 import PySimpleGUI as sg
 import csv
 import os.path
@@ -9,6 +10,7 @@ sg.theme('DarkAmber')   # Add a touch of color
 layout = [  [sg.Text('Choose fiat currency:'), sg.Combo(['USD','EUR','PLN'], key='-curr-')],
             [sg.Text('Choose your exchange:'), sg.Combo(['Binance','Coinbase','Coinbase Pro','Revolut'], key='-exch-')],
             [sg.Text('Choose file with statements:'), sg.InputText(key='-filename-', visible = False), sg.FileBrowse(file_types=(("Comma Separated Value", "*.csv"),))],
+            [sg.InputText(key='-date-', visible = False, enable_events = True), sg.CalendarButton('Calendar', target = '-date-', key = '-calendar-', format = '%Y-%m-%d', begin_at_sunday_plus = 1), sg.Checkbox('Dla potrzeb podatku', default = False, key = '-tax-')],
             [sg.Button('Generate'), sg.Button('Cancel')],
             [sg.Text('', key='-out-' ,visible = False)] ]
 
@@ -22,9 +24,8 @@ def csv_loop_for_fiat(csvname):
             rows = dict()
             rows[fields[0]] = row['Coin']
             rows[fields[1]] = row['Change']
-            rows[fields[2]] = row['UTC_Time']
+            rows[fields[2]] = nbp_req.convert_to_local_time(row['UTC_Time'])
             content.append(rows)
-    print(content)
     return content, fields
 
 def csv_savefile(content, fields, csvname):
@@ -52,6 +53,11 @@ while True:
             window['-out-'].update('File generated. Name: {0} , currency: {1}'.format(csv_output, curr),visible=True)
         #except:
             print("You entered non currency value")
+    if event == '-date-':
+        if values['-curr-'] == '':
+            sg.Popup('Currency has not been chosen', keep_on_top = True)
+        else:
+            print(nbp_req.nbp_exchange_rates(values['-date-'],values['-curr-'],values['-tax-']))
 
     
 window.close()
