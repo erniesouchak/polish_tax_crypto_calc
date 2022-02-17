@@ -1,9 +1,8 @@
 
-import nbp_req
 import PySimpleGUI as sg
-import csv
-import os.path
 
+import nbp_req
+import raport_generator
 
 sg.theme('DarkAmber')   # Add a touch of color
 # All the stuff inside your window.
@@ -12,45 +11,25 @@ layout = [  [sg.Text('Choose fiat currency:'), sg.Combo(['USD','EUR','PLN'], key
             [sg.Text('Choose file with statements:'), sg.InputText(key='-filename-', visible = False), sg.FileBrowse(file_types=(("Comma Separated Value", "*.csv"),))],
             [sg.InputText(key='-date-', visible = False, enable_events = True), sg.CalendarButton('Calendar', target = '-date-', key = '-calendar-', format = '%Y-%m-%d', begin_at_sunday_plus = 1), sg.Checkbox('Dla potrzeb podatku', default = False, key = '-tax-')],
             [sg.Button('Generate'), sg.Button('Cancel')],
-            [sg.Text('', key='-out-' ,visible = False)] ]
-
-def csv_loop_for_fiat(csvname):
-    content, fields = list(), list()
-    csv_filename_open = open(csvname)
-    csv_fiat = csv.DictReader(csv_filename_open)
-    fields = ['Coin', 'Value', 'Date']
-    for row in csv_fiat:
-        if row[fields[0]] == 'EUR':
-            rows = dict()
-            rows[fields[0]] = row['Coin']
-            rows[fields[1]] = row['Change']
-            rows[fields[2]] = nbp_req.convert_to_local_time(row['UTC_Time'])
-            content.append(rows)
-    return content, fields
-
-def csv_savefile(content, fields, csvname):
-    dirname = os.path.dirname(csvname)
-    csv_filename_write = os.path.join(dirname,'binance.csv')
-    with open(csv_filename_write, 'w', newline='') as csvfile:
-        writer = csv.DictWriter(csvfile, fieldnames = fields)
-        writer.writeheader()
-        writer.writerows(content)
-    return csv_filename_write
+            [sg.Text('', key='-out-' ,visible = False), sg.Button('Exit', key='-exit-',visible = False) ]
+            ]
 
 # Create the Window
 window = sg.Window('Window Title', layout)
 # Event Loop to process "events" and get the "values" of the inputs
 while True:
     event, values = window.read()
-    if event == sg.WIN_CLOSED or event == 'Cancel': # if user closes window or clicks cancel
+    if event == sg.WIN_CLOSED or event == 'Cancel' or event == '-exit-': # if user closes window or clicks cancel
         break
     if event == 'Generate':
         #try:
-            curr = values['-curr-']
-            filename = values['-filename-']
-            csv_rows, csv_head = csv_loop_for_fiat(filename)
-            csv_output = csv_savefile(csv_rows,csv_head,filename)
-            window['-out-'].update('File generated. Name: {0} , currency: {1}'.format(csv_output, curr),visible=True)
+            str_curr = values['-curr-']
+            f_filename = values['-filename-']
+            str_exchange = values['-exch-']
+            csv_rows, csv_head = raport_generator.csv_loop_for_fiat(f_filename, str_exchange, str_curr)
+            csv_output = raport_generator.csv_savefile(csv_rows,csv_head,f_filename)
+            window['-out-'].update('File generated. Name: {0} , currency: {1}'.format(csv_output, str_curr),visible=True)
+            window['-exit-'].update(visible = True)
         #except:
             print("You entered non currency value")
     if event == '-date-':
