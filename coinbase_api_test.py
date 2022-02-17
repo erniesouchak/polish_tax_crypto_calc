@@ -7,10 +7,10 @@ import os.path
 sg.theme('DarkAmber')   # Add a touch of color
 # All the stuff inside your window.
 layout = [  [sg.Text('Choose fiat currency:'), sg.Combo(['USD','EUR','PLN'], key='-curr-')],
-            [sg.Text('Enter crypto:'), sg.InputText(key='-input-')],
-            [sg.InputText(key='-filename-', visible = False), sg.FileBrowse(file_types=(("Comma Separated Value", "*.csv"),))],
-            [sg.Button('Ok'), sg.Button('Cancel')],
-            [sg.Text('You entered: ', key='-out-')] ]
+            [sg.Text('Choose your exchange:'), sg.Combo(['Binance','Coinbase','Coinbase Pro','Revolut'], key='-exch-')],
+            [sg.Text('Choose file with statements:'), sg.InputText(key='-filename-', visible = False), sg.FileBrowse(file_types=(("Comma Separated Value", "*.csv"),))],
+            [sg.Button('Generate'), sg.Button('Cancel')],
+            [sg.Text('', key='-out-' ,visible = False)] ]
 
 def csv_loop_for_fiat(csvname):
     content, fields = list(), list()
@@ -34,6 +34,7 @@ def csv_savefile(content, fields, csvname):
         writer = csv.DictWriter(csvfile, fieldnames = fields)
         writer.writeheader()
         writer.writerows(content)
+    return csv_filename_write
 
 # Create the Window
 window = sg.Window('Window Title', layout)
@@ -42,16 +43,13 @@ while True:
     event, values = window.read()
     if event == sg.WIN_CLOSED or event == 'Cancel': # if user closes window or clicks cancel
         break
-    url  = f"https://api.coinbase.com/v2/exchange-rates?currency={values['-input-']}"
-    if event == 'Ok':
+    if event == 'Generate':
         #try:
-            input_text = values['-input-']
             curr = values['-curr-']
-            rate = requests.get(url).json()['data']['rates'][curr]
             filename = values['-filename-']
             csv_rows, csv_head = csv_loop_for_fiat(filename)
-            csv_savefile(csv_rows,csv_head,filename)
-            window['-out-'].update('You entered {0} and is worth {1} {2}'.format(input_text, rate, curr))
+            csv_output = csv_savefile(csv_rows,csv_head,filename)
+            window['-out-'].update('File generated. Name: {0} , currency: {1}'.format(csv_output, curr),visible=True)
         #except:
             print("You entered non currency value")
 
