@@ -45,10 +45,10 @@ def csv_pandas_report(csv_name, str_exchange, str_currency):
 
 def excel_savefile(l_content,excel_name,str_exchange):
     dirname = os.path.dirname(excel_name)
-    excel_write_name = os.path.join(dirname,str_exchange + '_' + time_manager.return_timestamp() + '.xlsx')
+    excel_write_name = os.path.join(dirname, str_exchange + '_' + time_manager.return_timestamp() + '.xlsx')
     writer = pd.ExcelWriter(excel_write_name)
     df = pd.DataFrame.from_dict(l_content)
-    df.to_excel(writer,index=False)
+    df.to_excel(writer, index = False)
     writer.save()
     return excel_write_name
 
