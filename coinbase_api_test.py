@@ -22,18 +22,19 @@ while True:
     if event == sg.WIN_CLOSED or event == 'Cancel' or event == '-exit-': # if user closes window or clicks cancel
         break
     if event == 'Generate':
-        #try:
+        try:
             str_curr = values['-curr-']
             f_filename = values['-filename-']
             str_exchange = values['-exch-']
-            csv_rows, csv_head = raport_generator.csv_loop_for_fiat(f_filename, str_exchange, str_curr)
+            csv_rows = raport_generator.csv_pandas_report(f_filename, str_exchange, str_curr)
+            #csv_rows, csv_head = raport_generator.csv_loop_for_fiat(f_filename, str_exchange, str_curr)
             #csv_output = raport_generator.csv_savefile(csv_rows,csv_head,f_filename,str_exchange)
             #window['-out-'].update('File generated. Name: {0} , currency: {1}'.format(csv_output, str_curr),visible=True)
-            excel_output = raport_generator.excel_savefile(csv_rows,csv_head,f_filename,str_exchange)
+            excel_output = raport_generator.excel_savefile(csv_rows,f_filename,str_exchange)
             window['-out-'].update('File generated. Name: {0} , currency: {1}'.format(excel_output, str_curr),visible=True)
             window['-exit-'].update(visible = True)
-        #except:
-            print("You entered non currency value")
+        except:
+            sg.Popup('Error is somewhere', keep_on_top = True)
     if event == '-date-':
         if values['-curr-'] == '':
             sg.Popup('Currency has not been chosen', keep_on_top = True)
