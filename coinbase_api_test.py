@@ -1,6 +1,6 @@
 
-from weakref import finalize
 import PySimpleGUI as sg
+from pandas import value_counts
 
 import nbp_req
 import raport_generator
@@ -24,13 +24,12 @@ def sg_revolut_window(csv_revolut):
     for fiat in csv_revolut:
         row = list()
         for i_fiat in fiat:
-            row.append(sg.Text(i_fiat, size=(10, 3)))
+            row += [sg.Text(i_fiat, size=(10, 3))]
         if i_index > 0:
-            row.append(sg.InputText(key='-rev-' + str(i_index), enable_events=True))
-        rows.append(row)
+            row += [sg.InputText(key='-rev-' + str(i_index - 1))]
+        rows += [row]
         i_index += 1
-        print(i_index) 
-    layout.append(rows)
+    layout = [rows,[sg.Button('Save'),sg.Button('Cancel')]]
     return sg.Window('Revolut CSV Statement', layout, finalize = True)
 
 # Create the main window
@@ -66,8 +65,8 @@ while True:
             sg.Popup('Currency has not been chosen', keep_on_top = True)
         else:
             print(nbp_req.nbp_exchange_rates(values['-date-'],values['-curr-'],values['-tax-']))
-    elif '-rev-' in event:
-        print(event)
-
+    elif event == 'Save':
+        vals = [values]
+        print(vals)
     
 windows.close()
