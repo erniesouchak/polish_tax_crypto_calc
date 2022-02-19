@@ -1,4 +1,4 @@
-#import csv - for use with revolut csv
+import csv
 import os.path
 import pandas as pd
 
@@ -51,6 +51,15 @@ def excel_savefile(l_content,excel_name,str_exchange):
     df.to_excel(writer, index = False)
     writer.save()
     return excel_write_name
+
+def csv_revolut_reader(csv_name, str_exchange, str_curr):
+
+    csv_filename_open = open(csv_name)
+    csv_fiat = csv.reader(csv_filename_open)
+    #for fiat in csv_fiat:
+    #    print(fiat)
+
+    return csv_fiat
 
 # for future use with revolut csv
 '''
