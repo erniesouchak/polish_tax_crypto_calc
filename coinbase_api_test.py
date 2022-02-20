@@ -9,8 +9,8 @@ sg.theme('DarkAmber')   # Add a touch of color
 
 def sg_main_window(): # Creation of main window
 
-    layout = [  [sg.Text('Choose fiat currency:'), sg.Combo(['USD','EUR','PLN'], key='-curr-')],
-            [sg.Text('Choose your exchange:'), sg.Combo(['Binance','Coinbase','Coinbase Pro','Revolut'], key='-exch-')],
+    layout = [ [sg.Text('Choose your exchange:'), sg.Combo(['Binance','Coinbase','Coinbase Pro','Revolut'], key='-exch-')],
+            [sg.Text('Choose fiat currency:'), sg.Combo(['USD','EUR','PLN'], key='-curr-')],
             [sg.Text('Choose file with statements:'), sg.InputText(key='-filename-', visible = False), sg.FileBrowse(file_types=(("Comma Separated Value", "*.csv"),))],
             [sg.InputText(key='-date-', visible = False, enable_events = True), sg.CalendarButton('Calendar', target = '-date-', key = '-calendar-', format = '%Y-%m-%d', begin_at_sunday_plus = 1), sg.Checkbox('Dla potrzeb podatku', default = False, key = '-tax-')],
             [sg.Button('Generate'), sg.Button('Cancel')],
@@ -18,15 +18,17 @@ def sg_main_window(): # Creation of main window
             ]
     return sg.Window('Set-up your report', layout, finalize = True)
 
-def sg_revolut_window(csv_revolut):
+def sg_revolut_window(csv_revolut,str_curr):
     rows, layout = list(), list()
     i_index = 0
     for fiat in csv_revolut:
         row = list()
         for i_fiat in fiat:
-            row += [sg.Text(i_fiat, size=(10, 3))]
+            row += [sg.Text(i_fiat, size=(25, 3))]
         if i_index > 0:
-            row += [sg.InputText(key='-rev-' + str(i_index - 1))]
+            row += [sg.InputText(key='-rev-' + str(i_index - 1), size=(15,3)), sg.Combo(['USD','EUR','PLN'], key='-revcurr-' + str(i_index - 1),default_value=str_curr)]
+        else:
+            row += [sg.Text('Amount of fiat currency', size=(15,3)), sg.Text('Fiat currency \n(change if needed)',size=(15,3))]
         rows += [row]
         i_index += 1
     layout = [rows,[sg.Button('Save'),sg.Button('Cancel')]]
@@ -56,7 +58,7 @@ while True:
                     excel_output = raport_generator.excel_savefile(csv_rows,f_filename,str_exchange)
                     windows['-out-'].update('File generated. Name: {0} , currency: {1}'.format(excel_output, str_curr),visible=True)
             else:
-                window_revolut = sg_revolut_window(raport_generator.csv_revolut_reader(f_filename, str_exchange, str_curr))
+                window_revolut = sg_revolut_window(raport_generator.csv_revolut_reader(f_filename, str_exchange, str_curr),str_curr)
             windows['-exit-'].update(visible = True)
         #except:
             #sg.Popup('Error is somewhere', keep_on_top = True)
@@ -66,7 +68,9 @@ while True:
         else:
             print(nbp_req.nbp_exchange_rates(values['-date-'],values['-curr-'],values['-tax-']))
     elif event == 'Save':
-        vals = [values]
+        vals = []
+        for i in range(int(len(values)/2)):
+            vals.extend(values['-rev-' + str(i)])
         print(vals)
     
 windows.close()

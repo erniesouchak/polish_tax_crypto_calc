@@ -5,9 +5,11 @@ import pandas as pd
 import nbp_req
 import time_manager
 
+pd.set_option('display.float_format', lambda x: '%.8f' % x)
+
 d_exchanges = { 'Binance': ['UTC_Time', 'Operation', 'Coin', 'Change'],
  'Coinbase': ['Timestamp', 'Transaction Type', 'Spot Price Currency', 'Total (inclusive of fees)'],
- 'Coinbase Pro': ['time', 'type', 'amount/balance unit', 'amount'] }
+ 'Coinbase Pro': ['time', 'type', 'amount/balance unit', 'amount'], 'Revolut': ['Completed Date', 'Description', 'Amount', 'Currency'] }
 
 l_transactions = ['Buy', 'match', 'fee', 'Transaction Related', 'Small assets exchange BNB']
 
@@ -19,18 +21,33 @@ def coinbase_csv_rebuild(csv_name):
 
     return df
 
+def open_statement(csv_name, str_exchange, str_currency, to_dict=True):
+    df = pd.DataFrame()
+    if not to_dict:
+        df = pd.read_csv(csv_name)
+        df = df[d_exchanges[str_exchange]]
+        df[d_exchanges[str_exchange][2]] = df[d_exchanges[str_exchange][2]].apply(lambda x: '%.8f' % x)
+        headers = [df.columns.tolist()]
+        rows = df.values.tolist()
+        output = headers + rows
+    else:
+        if str_exchange == 'Coinbase':
+            df = coinbase_csv_rebuild(csv_name)
+        else:
+            df = pd.read_csv(csv_name)
+        if not str_exchange == 'Revolut':
+            df = df.loc[(df[d_exchanges[str_exchange][2]] == str_currency) & (df[d_exchanges[str_exchange][1]].isin(l_transactions))]
+        output = df.to_dict(orient='records')
+
+    return output
+
+
 def csv_pandas_report(csv_name, str_exchange, str_currency):
     
     l_report = list()
 
-    if str_exchange == 'Coinbase':
-        df = coinbase_csv_rebuild(csv_name)
-    else:
-        df = pd.read_csv(csv_name)
+    l_contents = open_statement(csv_name,str_exchange,str_currency,True)
 
-    df = df.loc[(df[d_exchanges[str_exchange][2]] == str_currency) & (df[d_exchanges[str_exchange][1]].isin(l_transactions))]
-    
-    l_contents = df.to_dict(orient='records')
     for l_content in l_contents:
         d_rows = dict()
         d_rows[l_fields[0]] = str_exchange
@@ -54,12 +71,9 @@ def excel_savefile(l_content,excel_name,str_exchange):
 
 def csv_revolut_reader(csv_name, str_exchange, str_curr):
 
-    csv_filename_open = open(csv_name)
-    csv_fiat = csv.reader(csv_filename_open)
-    #for fiat in csv_fiat:
-    #    print(fiat)
+    csv_rev = open_statement(csv_name,str_exchange,str_curr,False)
 
-    return csv_fiat
+    return csv_rev
 
 # for future use with revolut csv
 '''
