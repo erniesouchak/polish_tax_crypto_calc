@@ -1,7 +1,6 @@
 
 import PySimpleGUI as sg
 
-import nbp_req
 import raport_generator
 
 class Report:
@@ -23,6 +22,12 @@ class Report:
     def getCurrency(self):
         return self.currency
 
+    def getExchange(self):
+        return self.exchange
+
+    def getPath(self):
+        return self.filepath
+
     @property
     def generated(self):
         return self._generated
@@ -43,23 +48,29 @@ class Report:
     def getReportData(self):
         return self.report_list
 
+    def setRevolutgenerators(self, rev_revs, rev_currevs):
+        self.rev_revs = rev_revs
+        self.rev_currevs = rev_currevs
+
+    def getRevolutgenerators(self):
+        return self.rev_revs, self.rev_currevs
+
 
 sg.theme('DarkAmber')   # Add a touch of color
 
 l_currencies = ['USD','EUR','PLN']
 l_report = []
-l_data = []
-l_csv_data = []
 
 def sg_main_window(): # Creation of main window
 
-    table = [[sg.Table(l_data,headings=['File','Exchange','Currency'],auto_size_columns=False,key='-table-')]]
+    table = [[sg.Table(l_report,headings=['File','Exchange','Currency'],auto_size_columns=False,key='-table-')]]
     layout = [ [sg.Frame('List of files',table,visible=True,key='-frame1-')], [sg.Text('Choose your exchange:'), sg.Combo(['Binance','Coinbase','Coinbase Pro','Revolut'], key='-exch-')],
             [sg.Text('Choose fiat currency:'), sg.Combo(l_currencies, key='-curr-')],
-            [sg.Text('Choose file with statements:'), sg.InputText(key='-filename-', enable_events=True, visible = False), sg.FileBrowse(file_types=(("Comma Separated Value", "*.csv"),),target='-filename-')],
-            [sg.Button('Generate'), sg.Button('Cancel')],
+            [sg.Text('Add file with statements:'), sg.InputText(key='-filename-', enable_events=True, visible = False), sg.FileBrowse(file_types=(("Comma Separated Value", "*.csv"),),target='-filename-')],
             [sg.Button('Manage Revolut CSV',key='-manage-', visible = False)],
-            [sg.Text('', key='-out-' ,visible = False), sg.Button('Exit', key='-exit-',visible = False) ]
+            [sg.Button('Generate', key='-generate-')],
+            [sg.InputText(key='-out-',enable_events=True,visible=False),sg.FolderBrowse('Choose path', key='-path-',target = '-out-'), sg.Button('Exit', key='-exit-') ],
+            [sg.Text('', key='-saved-',visible=False)]
             ]
     return sg.Window('Set-up your report', layout, finalize = True)
 
@@ -72,10 +83,12 @@ def sg_revolut_manager(l_revoluts): # Creation of all revolut files manager
 
     return sg.Window('Revolut CSV Manager', layout, finalize = True)
 
-def sg_revolut_window(csv_revolut,str_curr): # Creation of individual csv file from revolut
+def sg_revolut_window(csv_revolut,str_curr,r): # Creation of individual csv file from revolut
     cols_1, cols_2, cols_3= list(), list(), list()
     i_index = 0
     wid = [18,15,12,7]
+    if r.generated:
+        revs,revscurr = r.getRevolutgenerators()
     for fiat in csv_revolut:
         col_1 = list()
         col_2 = list()
@@ -86,8 +99,12 @@ def sg_revolut_window(csv_revolut,str_curr): # Creation of individual csv file f
             else:
                 col_1 += [sg.Text(i_fiat, size = (wid[j],3))]
         if i_index > 0:
-            col_2 += [sg.InputText(key='-rev-' + str(i_index - 1), size = 10)]
-            col_3 += [sg.Combo(l_currencies, key='-rvcurr-' + str(i_index - 1),default_value=str_curr, size = 10, enable_events=True)]
+            if r.generated:
+                col_2 += [sg.InputText(key='-rev-' + str(i_index - 1),default_text=revs[i_index - 1], size = 10)]
+                col_3 += [sg.Combo(l_currencies, key='-rvcurr-' + str(i_index - 1),default_value=revscurr[i_index - 1], size = 10, enable_events=True)]
+            else:
+                col_2 += [sg.InputText(key='-rev-' + str(i_index - 1), size = 10)]
+                col_3 += [sg.Combo(l_currencies, key='-rvcurr-' + str(i_index - 1),default_value=str_curr, size = 10, enable_events=True)]
         else:
             col_2 += [sg.Text('Amount of fiat currency', size = (10,3))]
             col_3 += [sg.Text('Fiat currency (change if needed)', size = (10,3))]
@@ -95,7 +112,7 @@ def sg_revolut_window(csv_revolut,str_curr): # Creation of individual csv file f
         cols_2 += [col_2]
         cols_3 += [col_3]
         i_index += 1
-    layout = [sg.Frame('Revolut CSV',cols_1),sg.Frame('Input values',cols_2),sg.Frame('Currency',cols_3)],[sg.Button('Save'),sg.Button('Cancel')]
+    layout = [sg.Frame('Revolut CSV',cols_1),sg.Frame('Input values',cols_2),sg.Frame('Currency',cols_3)],[sg.Button('Save',key='-saverev-'),sg.Button('Cancel',key='-cancel-')]
     return sg.Window('Revolut CSV Statement', layout, finalize = True,resizable=True)
 
 # Create the main window
@@ -104,8 +121,7 @@ window_main, window_revolut, window_manager = sg_main_window(), None, None
 while True:
     windows, event, values = sg.read_all_windows()
     print(event)
-    if event == sg.WIN_CLOSED or event == 'Cancel' or event == '-exit-' or event == '-manexit-': # if user closes window or clicks cancel
-        print(l_csv_data)
+    if event == sg.WIN_CLOSED or event == '-cancel-' or event == '-exit-' or event == '-manexit-': # if user closes window or clicks cancel
         windows.close()
         if windows == window_revolut:
             window_revolut = None
@@ -113,7 +129,7 @@ while True:
             window_manager = None
         elif windows == window_main:
             break
-    elif event == '-filename-':
+    elif event == '-filename-': # fill the table in gui
         report = Report(raport_generator.get_filename(values['-filename-'],False))
         l_report += [report]
         r_data = (values['-filename-'],values['-exch-'],values['-curr-'])
@@ -123,36 +139,27 @@ while True:
         rev_check = [ r for r in l_report if r.isRevolut() ]
         if not rev_check == '':
             windows['-manage-'].update(visible = True)
-    elif event == 'Generate':
-        #try:
-        for i,j in enumerate(l_data):
-            str_curr = l_data[i][2]
-            f_filename = l_data[i][0]
-            str_exchange = l_data[i][1]
-            if str_exchange != 'Revolut':
-                l_csv_data.append(raport_generator.csv_pandas_report(f_filename, str_exchange, str_curr))
-                if len(l_csv_data) == 0:
-                    sg.Popup('Empty raport', keep_on_top = True)
-                else:
-                    #excel_output = raport_generator.excel_savefile(csv_rows,f_filename,str_exchange)
-                    windows['-out-'].update('File generated. Name: {0} , currency: {1}'.format("excel_output", str_curr),visible=True)
-            else:
-                if window_revolut is None:
-                    window_revolut = sg_revolut_window(raport_generator.csv_revolut_reader(f_filename, str_exchange, str_curr),str_curr)
-            windows['-exit-'].update(visible = True)
-        #except:
-            #sg.Popup('Error is somewhere', keep_on_top = True)
-    elif event == '-manage-':
+    elif event == '-generate-': # generate report from non-revolut statements
+            for r in l_report:
+                if not r.isRevolut():
+                    r.setReportData = raport_generator.csv_pandas_report(r.getData())
+                    r.generated = True
+    elif event == '-out-': # save generated report in folder chosen by user
+        list_report = [r.getReportData() for r in l_report]
+        list_report = [item for sublist in list_report for item in sublist]
+        excel_output = raport_generator.excel_savefile(list_report,values['-out-'])
+        windows['-saved-'].update(excel_output,visible=True)
+    elif event == '-manage-': # generate gui manager for revolut csv
         rev_check = [r.getData() for r in l_report if r.isRevolut()]
         window_manager = sg_revolut_manager(rev_check)
-    elif '-load-' in event:
+    elif '-load-' in event: # generate gui manager for individual revolut csv
         for r in l_report:
             if windows[event].metadata == r.filename:
                 if window_revolut is None:
-                    window_revolut = sg_revolut_window(raport_generator.csv_revolut_reader(r.getData()),r.getCurrency())
+                    window_revolut = sg_revolut_window(raport_generator.csv_revolut_reader(r.getData()),r.getCurrency(),r)
                     window_revolut.metadata = windows[event].metadata
                     break
-    elif event == 'Save':
+    elif event == '-saverev-': # save extra fills for revolut csv's
         revs = []
         revcurrs = []
         for k,v in values.items():
@@ -166,17 +173,12 @@ while True:
                 break
         else:
             for r in l_report:
-                if window_revolut.metadata == r.filename and r.generated == False:
-                    l_csv_data.append(raport_generator.csv_pandas_report(r.getData(), revcurrs, revs))
-                    r.generated = True
-                    print(r.generated)
-                    window_revolut.close()
-                    window_revolut = None
-                    break
-
-                
-            #excel_output = raport_generator.excel_savefile(csv_rows,f_filename,str_exchange)
-
-
-
+                if window_revolut.metadata == r.filename:
+                        r.setRevolutgenerators(revs,revcurrs)
+                        r.setReportData(raport_generator.csv_pandas_report(r.getData(), revcurrs, revs))
+                        r.generated = True
+                        window_revolut.close()
+                        window_revolut = None
+                        break
+            
 windows.close()

@@ -1,8 +1,7 @@
 import os.path
 import pandas as pd
 
-import nbp_req
-import time_manager
+import extras
 
 d_exchanges = { 'Binance': ['UTC_Time', 'Operation', 'Coin', 'Change'],
  'Coinbase': ['Timestamp', 'Transaction Type', 'Spot Price Currency', 'Total (inclusive of fees)'],
@@ -19,13 +18,13 @@ def check_float(val):
     except:
         return val
 
-def coinbase_csv_rebuild(csv_name):
+def coinbase_csv_rebuild(csv_name): # coinbase csv has extra empty rows
 
     df = pd.read_csv(csv_name,skiprows=7)
 
     return df
 
-def open_statement(csv_tup, to_dict=True):
+def open_statement(csv_tup, to_dict=True): # open csv file and reads needed info
     csv_name, str_exchange, str_currency = csv_tup
     df = pd.DataFrame()
     if not to_dict:
@@ -47,7 +46,7 @@ def open_statement(csv_tup, to_dict=True):
     return output
 
 
-def csv_pandas_report(csv_tup, *args):
+def csv_pandas_report(csv_tup, *args): # create list of dicts with data from csv's
     
     csv_name, str_exchange, str_currency = csv_tup
 
@@ -59,15 +58,15 @@ def csv_pandas_report(csv_tup, *args):
     
     for l_content in l_contents:
         d_rows = dict()
-        if not str_exchange == 'Revolut':
+        if not str_exchange == 'Revolut':   # non revolut csv
             d_rows[l_fields[0]] = str_exchange
             d_rows[l_fields[1]] = l_content[d_exchanges[str_exchange][2]]
             d_rows[l_fields[2]] = l_content[d_exchanges[str_exchange][3]]
-            d_rows[l_fields[3]] = time_manager.convert_to_local_time(l_content[d_exchanges[str_exchange][0]], str_exchange)
-            d_rows[l_fields[5]], d_rows[l_fields[4]] = nbp_req.nbp_exchange_rates(d_rows[l_fields[3]],str_currency,True)
+            d_rows[l_fields[3]] = extras.convert_to_local_time(l_content[d_exchanges[str_exchange][0]], str_exchange)
+            d_rows[l_fields[5]], d_rows[l_fields[4]] = extras.nbp_exchange_rates(d_rows[l_fields[3]],str_currency,True)
             d_rows[l_fields[6]] = abs(round(float(d_rows[l_fields[2]]) * float(d_rows[l_fields[5]]),2))
             l_report.append(d_rows)
-        else:
+        else:                               # revolut csv
             d_rows[l_fields[0]] = str_exchange
             if(len(args) > 0):
                 try:
@@ -76,9 +75,9 @@ def csv_pandas_report(csv_tup, *args):
                 except:
                     print('Not a list!')
                     break
-            d_rows[l_fields[3]] = time_manager.convert_to_local_time(l_content[d_exchanges[str_exchange][0]], str_exchange)
+            d_rows[l_fields[3]] = extras.convert_to_local_time(l_content[d_exchanges[str_exchange][0]], str_exchange)
             if not d_rows[l_fields[1]] == 'PLN':
-                d_rows[l_fields[5]],d_rows[l_fields[4]]= nbp_req.nbp_exchange_rates(d_rows[l_fields[3]],d_rows[l_fields[1]],True)
+                d_rows[l_fields[5]],d_rows[l_fields[4]]= extras.nbp_exchange_rates(d_rows[l_fields[3]],d_rows[l_fields[1]],True)
                 d_rows[l_fields[6]] = abs(round(float(d_rows[l_fields[2]]) * float(d_rows[l_fields[5]]),2))
             else:
                 d_rows[l_fields[6]] = d_rows[l_fields[2]]
@@ -87,16 +86,16 @@ def csv_pandas_report(csv_tup, *args):
 
     return l_report
 
-def excel_savefile(l_content,excel_name,str_exchange):
-    dirname = os.path.dirname(excel_name)
-    excel_write_name = os.path.join(dirname, str_exchange + '_' + time_manager.return_timestamp() + '.xlsx')
+def excel_savefile(l_content,dirname): # generate file with report
+
+    excel_write_name = os.path.join(dirname, 'Report_' + extras.return_timestamp() + '.xlsx')
     writer = pd.ExcelWriter(excel_write_name)
     df = pd.DataFrame.from_dict(l_content)
     df.to_excel(writer, index = False)
     writer.save()
     return excel_write_name
 
-def csv_revolut_reader(csv_tup):
+def csv_revolut_reader(csv_tup): # reader of revolut csv for gui purposes
 
     csv_rev = open_statement(csv_tup,False)
 
