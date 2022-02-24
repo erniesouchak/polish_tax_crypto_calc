@@ -68,7 +68,7 @@ def sg_revolut_manager(l_revoluts): # Creation of all revolut files manager
     labels = [[raport_generator.get_filename(x,False) for ind, x in enumerate(cols) if ind == 0] for cols in l_revoluts]
     col2 = [[sg.Button(''.join(labels[i]), metadata = ''.join(labels[i]), key='-load-' + str(i))] for i in range(len(l_revoluts))]
 
-    layout = [ [sg.Frame('List of loaded csv',col2)]]
+    layout = [ [sg.Frame('List of loaded csv',col2)], [sg.Button('Exit', key='-manexit-')]]
 
     return sg.Window('Revolut CSV Manager', layout, finalize = True)
 
@@ -104,7 +104,7 @@ window_main, window_revolut, window_manager = sg_main_window(), None, None
 while True:
     windows, event, values = sg.read_all_windows()
     print(event)
-    if event == sg.WIN_CLOSED or event == 'Cancel' or event == '-exit-': # if user closes window or clicks cancel
+    if event == sg.WIN_CLOSED or event == 'Cancel' or event == '-exit-' or event == '-manexit-': # if user closes window or clicks cancel
         print(l_csv_data)
         windows.close()
         if windows == window_revolut:
