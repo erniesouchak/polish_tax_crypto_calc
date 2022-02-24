@@ -6,7 +6,7 @@ def convert_to_local_time(str_date, str_exchange):
   from_zone = tz.tzutc()
   to_zone = tz.tzlocal()
 
-  if str_exchange == 'Binance':
+  if str_exchange == 'Binance' or str_exchange == 'Revolut':
     utc = datetime.strptime(str_date, '%Y-%m-%d %H:%M:%S')
   elif str_exchange == 'Coinbase':
     utc = datetime.strptime(str_date, '%Y-%m-%dT%H:%M:%SZ')
