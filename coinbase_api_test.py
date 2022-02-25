@@ -137,12 +137,12 @@ while True:
         l_newdata = [ " ".join(r.getData(True)) for r in l_report ] 
         windows['-table-'].update(values = l_newdata)
         rev_check = [ r for r in l_report if r.isRevolut() ]
-        if not rev_check == '':
+        if rev_check:
             windows['-manage-'].update(visible = True)
     elif event == '-generate-': # generate report from non-revolut statements
             for r in l_report:
                 if not r.isRevolut():
-                    r.setReportData = raport_generator.csv_pandas_report(r.getData())
+                    r.setReportData(raport_generator.csv_pandas_report(r.getData()))
                     r.generated = True
     elif event == '-out-': # save generated report in folder chosen by user
         list_report = [r.getReportData() for r in l_report]

@@ -48,7 +48,7 @@ def open_statement(csv_tup, to_dict=True): # open csv file and reads needed info
 
 def csv_pandas_report(csv_tup, *args): # create list of dicts with data from csv's
     
-    csv_name, str_exchange, str_currency = csv_tup
+    _, str_exchange, str_currency = csv_tup
 
     l_report = list()
 
