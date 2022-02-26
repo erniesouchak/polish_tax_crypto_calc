@@ -41,7 +41,7 @@ def open_statement(csv_tup, to_dict=True): # open csv file and reads needed info
             df = pd.read_csv(csv_name)
         if not str_exchange == 'Revolut':
             df = df.loc[(df[d_exchanges[str_exchange][2]] == str_currency) & (df[d_exchanges[str_exchange][1]].isin(l_transactions))]
-        output = df.to_dict(orient='records')
+        output = df
 
     return output
 
@@ -50,48 +50,41 @@ def csv_pandas_report(csv_tup, *args): # create list of dicts with data from csv
     
     _, str_exchange, str_currency = csv_tup
 
-    l_report = list()
+    d_rows = pd.DataFrame()
 
     l_contents = open_statement(csv_tup,True)
-    
-    index = 0
-    
-    for l_content in l_contents:
-        d_rows = dict()
-        if not str_exchange == 'Revolut':   # non revolut csv
-            d_rows[l_fields[0]] = str_exchange
-            d_rows[l_fields[1]] = l_content[d_exchanges[str_exchange][2]]
-            d_rows[l_fields[2]] = l_content[d_exchanges[str_exchange][3]]
-            d_rows[l_fields[3]] = extras.convert_to_local_time(l_content[d_exchanges[str_exchange][0]], str_exchange)
-            d_rows[l_fields[5]], d_rows[l_fields[4]] = extras.nbp_exchange_rates(d_rows[l_fields[3]],str_currency,True)
+        
+    if not str_exchange == 'Revolut':   # non revolut csv
+        d_rows[l_fields[0]] = str_exchange
+        d_rows[l_fields[1]] = l_contents[d_exchanges[str_exchange][2]]
+        d_rows[l_fields[2]] = l_contents[d_exchanges[str_exchange][3]]
+        d_rows[l_fields[3]] = l_contents[d_exchanges[str_exchange][0]].map(lambda x: extras.convert_to_local_time(x, str_exchange))
+        d_rows[l_fields[5]], d_rows[l_fields[4]] = extras.nbp_exchange_rates(d_rows[l_fields[3]],str_currency,True)
+        d_rows[l_fields[6]] = abs(round(float(d_rows[l_fields[2]]) * float(d_rows[l_fields[5]]),2))
+    else:                               # revolut csv
+        d_rows[l_fields[0]] = str_exchange
+        if(len(args) > 0):
+            try:
+                d_rows[l_fields[1]] = args[0]
+                d_rows[l_fields[2]] = check_float(args[1])
+            except:
+                print('Not a list!')
+        d_rows[l_fields[3]] = l_contents[d_exchanges[str_exchange][0]].map(lambda x: extras.convert_to_local_time(x, str_exchange))
+        if not d_rows[l_fields[1]] == 'PLN':
+            d_rows[l_fields[5]],d_rows[l_fields[4]]= extras.nbp_exchange_rates(d_rows[l_fields[3]],d_rows[l_fields[1]],True)
             d_rows[l_fields[6]] = abs(round(float(d_rows[l_fields[2]]) * float(d_rows[l_fields[5]]),2))
-            l_report.append(d_rows)
-        else:                               # revolut csv
-            d_rows[l_fields[0]] = str_exchange
-            if(len(args) > 0):
-                try:
-                    d_rows[l_fields[1]] = args[0][index]
-                    d_rows[l_fields[2]] = check_float(args[1][index])
-                except:
-                    print('Not a list!')
-                    break
-            d_rows[l_fields[3]] = extras.convert_to_local_time(l_content[d_exchanges[str_exchange][0]], str_exchange)
-            if not d_rows[l_fields[1]] == 'PLN':
-                d_rows[l_fields[5]],d_rows[l_fields[4]]= extras.nbp_exchange_rates(d_rows[l_fields[3]],d_rows[l_fields[1]],True)
-                d_rows[l_fields[6]] = abs(round(float(d_rows[l_fields[2]]) * float(d_rows[l_fields[5]]),2))
-            else:
-                d_rows[l_fields[6]] = d_rows[l_fields[2]]
-            index += 1
-            l_report.append(d_rows)
+        else:
+            d_rows[l_fields[6]] = d_rows[l_fields[2]]
 
-    return l_report
+    return d_rows
+
+
 
 def excel_savefile(l_content,dirname): # generate file with report
 
     excel_write_name = os.path.join(dirname, 'Report_' + extras.return_timestamp() + '.xlsx')
     writer = pd.ExcelWriter(excel_write_name)
-    df = pd.DataFrame.from_dict(l_content)
-    df.to_excel(writer, index = False)
+    l_content.to_excel(writer, index = False)
     writer.save()
     return excel_write_name
 
