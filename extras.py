@@ -51,6 +51,8 @@ def nbp_exchange_rates(str_date,str_code, bool_tax_purpose):
 
   f_exchange_rate = 0.0
   date_day = convert_date_tax_purpose(str_date,bool_tax_purpose)
+  if str_code == 'PLN':
+    return 1.0, date_day
   req_status = check_status(str_code,date_day).status_code
   while req_status != 200:
     date_day = go_back_one_day(date_day)
