@@ -121,7 +121,6 @@ window_main, window_revolut, window_manager = sg_main_window(), None, None
 # Event Loop to process "events" and get the "values" of the inputs
 while True:
     windows, event, values = sg.read_all_windows()
-    print(event)
     if event == sg.WIN_CLOSED or event == '-cancel-' or event == '-exit-' or event == '-manexit-': # if user closes window or clicks cancel
         windows.close()
         if windows == window_revolut:
@@ -138,11 +137,9 @@ while True:
         l_newdata = [ " ".join(r.getData(True)) for r in l_report ] 
         windows['-table-'].update(values = l_newdata)
         rev_check = [ r for r in l_report if r.isRevolut() ]
-        print(values['-filename-'])
         if rev_check:
             windows['-manage-'].update(visible = True)
         windows['-filename-'].update(value='')
-        print(values['-filename-'])
     elif event == '-generate-': # generate report from non-revolut statements
         start_time = extras.timelapse()
         for r in l_report:

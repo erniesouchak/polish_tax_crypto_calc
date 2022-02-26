@@ -60,7 +60,6 @@ def check_status(str_code, date_day):
 def nbp_exchange_rates(str_date,str_code, bool_tax_purpose):
 
   f_exchange_rate = 0.0
-  print(type(str_date))
   date_day = convert_date_tax_purpose(str_date,bool_tax_purpose)
   if str_code == 'PLN':
     return 1.0, date_day
