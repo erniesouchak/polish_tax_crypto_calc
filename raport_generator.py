@@ -41,7 +41,7 @@ def open_statement(csv_tup, to_dict=True): # open csv file and reads needed info
             df = pd.read_csv(csv_name)
         if not str_exchange == 'Revolut':
             df = df.loc[(df[d_exchanges[str_exchange][2]] == str_currency) & (df[d_exchanges[str_exchange][1]].isin(l_transactions))]
-        output = df
+        output = df.reset_index(drop=True)
 
     return output
 
@@ -58,18 +58,20 @@ def csv_pandas_report(csv_tup, *args): # create list of dicts with data from csv
     l_contents = open_statement(csv_tup,True)
         
     if not str_exchange == 'Revolut':   # non revolut csv
-        d_rows[l_fields[0]] = str_exchange
+        l_exchange = [str_exchange for x in range(l_contents.shape[0])]
+        d_rows[l_fields[0]] = l_exchange
         d_rows[l_fields[1]] = l_contents[d_exchanges[str_exchange][2]]
         d_rows[l_fields[2]] = l_contents[d_exchanges[str_exchange][3]]
         d_rows[l_fields[3]] = l_contents[d_exchanges[str_exchange][0]].map(lambda x: extras.convert_to_local_time(x, str_exchange))
-        d_rows[l_fields[5]], d_rows[l_fields[4]] = extras.nbp_exchange_rates(d_rows[l_fields[3]],str_currency,True)
-        d_rows[l_fields[6]] = abs(round(float(d_rows[l_fields[2]]) * float(d_rows[l_fields[5]]),2))
+        d_rows[[l_fields[5],l_fields[4]]] = [extras.nbp_exchange_rates(a,b,True) for a, b in zip(d_rows[l_fields[3]],d_rows[l_fields[1]])]
+        d_rows[l_fields[6]] = calc_val(pd.to_numeric(d_rows[l_fields[2]]),pd.to_numeric(d_rows[l_fields[5]]))
     else:                               # revolut csv
-        d_rows[l_fields[0]] = str_exchange
+        l_exchange = [str_exchange for x in range(l_contents.shape[0])]
+        d_rows[l_fields[0]] = l_exchange
         if(len(args) > 0):
             try:
                 d_rows[l_fields[1]] = args[0]
-                d_rows[l_fields[2]] = check_float(args[1])
+                d_rows[l_fields[2]] = pd.to_numeric(args[1])
             except:
                 print('Not a list!')
         d_rows[l_fields[3]] = l_contents[d_exchanges[str_exchange][0]].map(lambda x: extras.convert_to_local_time(x, str_exchange))
@@ -78,13 +80,12 @@ def csv_pandas_report(csv_tup, *args): # create list of dicts with data from csv
 
     return d_rows
 
-
-
 def excel_savefile(l_content,dirname): # generate file with report
 
     excel_write_name = os.path.join(dirname, 'Report_' + extras.return_timestamp() + '.xlsx')
     writer = pd.ExcelWriter(excel_write_name)
-    l_content.to_excel(writer, index = False)
+    df_report = pd.concat(l_content,ignore_index=True)
+    df_report.to_excel(writer, index = False)
     writer.save()
     return excel_write_name
 

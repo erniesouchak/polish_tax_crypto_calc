@@ -2,6 +2,16 @@ from datetime import datetime, date, timedelta
 from dateutil import tz
 from requests import get
 
+import time
+
+def timelapse():
+  lapse = time.monotonic()
+  return lapse
+
+def count_time(start,end):
+  delta = timedelta(seconds=end - start)
+  return delta
+
 def convert_to_local_time(str_date, str_exchange):
 
   from_zone = tz.tzutc()
@@ -50,6 +60,7 @@ def check_status(str_code, date_day):
 def nbp_exchange_rates(str_date,str_code, bool_tax_purpose):
 
   f_exchange_rate = 0.0
+  print(type(str_date))
   date_day = convert_date_tax_purpose(str_date,bool_tax_purpose)
   if str_code == 'PLN':
     return 1.0, date_day
