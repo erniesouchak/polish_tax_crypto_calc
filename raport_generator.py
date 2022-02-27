@@ -72,14 +72,10 @@ def csv_pandas_report(csv_tup, *args): # create list of dicts with data from csv
         l_exchange = [str_exchange for x in range(l_contents.shape[0])]
         d_rows[l_fields[0]] = l_exchange
         if(len(args) > 0):
-            #try:
-                d_rows[l_fields[1]] = args[0]
-                d_rows[l_fields[2]] = [x.replace(',','.') for x in args[1]]
-            #except:
-                print('Not a list!')
+            d_rows[l_fields[1]] = args[0]
+            d_rows[l_fields[2]] = [x.replace(',','.') for x in args[1]]
         d_rows[l_fields[3]] = l_contents[d_exchanges[str_exchange][0]].map(lambda x: extras.convert_to_local_time(x, str_exchange))
         d_rows[[l_fields[5],l_fields[4]]] = [extras.nbp_exchange_rates(a,b,True) for a, b in zip(d_rows[l_fields[3]],d_rows[l_fields[1]])]
-        print(d_rows)
         d_rows[l_fields[6]] = calc_val(pd.to_numeric(d_rows[l_fields[2]]),pd.to_numeric(d_rows[l_fields[5]]),str_exchange)
 
     return d_rows
