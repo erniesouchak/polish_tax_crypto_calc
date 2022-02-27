@@ -121,7 +121,7 @@ window_main, window_revolut, window_manager = sg_main_window(), None, None
 # Event Loop to process "events" and get the "values" of the inputs
 while True:
     windows, event, values = sg.read_all_windows()
-    if event == sg.WIN_CLOSED or event == '-cancel-' or event == '-exit-' or event == '-manexit-': # if user closes window or clicks cancel
+    if event == sg.WIN_CLOSED or event == '-exit-' or event == '-manexit-': # if user closes window or clicks cancel
         windows.close()
         if windows == window_revolut:
             window_revolut = None
@@ -129,6 +129,10 @@ while True:
             window_manager = None
         elif windows == window_main:
             break
+    elif event == '-cancel-':
+        window_manager.reappear()
+        window_revolut.close()
+        window_revolut = None        
     elif event == '-filename-': # fill the table in gui
         if values['-filename-']:
             if values['-exch-'] and values['-curr-']:
@@ -169,6 +173,7 @@ while True:
         for r in l_report:
             if windows[event].metadata == r.filename:
                 if window_revolut is None:
+                    window_manager.disappear()
                     window_revolut = sg_revolut_window(raport_generator.csv_revolut_reader(r.getData()),r.getCurrency(),r)
                     window_revolut.metadata = windows[event].metadata
                     break
@@ -192,6 +197,7 @@ while True:
                         r.generated = True
                         window_revolut.close()
                         window_revolut = None
+                        window_manager.reappear()
                         break
             
 windows.close()
