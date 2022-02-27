@@ -7,3 +7,7 @@ Analyzes csv statements from Coinbase, Coinbase Pro, Binance (spot) for buying c
 For Revolut csv additional template is used to fill information of buying/selling crypto
 (Revolut csv does not contain info about amount of fiat currency used to buy or sell)
 
+Disclaimer: 
+This project is created for educational purpose (Python learning).
+Author does not take any responsibility for using it to create tax declarations for Polish Tax Office.
+

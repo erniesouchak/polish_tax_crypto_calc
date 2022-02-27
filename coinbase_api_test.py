@@ -2,6 +2,7 @@
 import PySimpleGUI as sg
 
 import raport_generator
+import extras
 
 class Report:
 
@@ -64,7 +65,7 @@ l_report = []
 def sg_main_window(): # Creation of main window
 
     table = [[sg.Table(l_report,headings=['File','Exchange','Currency'],auto_size_columns=False,key='-table-')]]
-    layout = [ [sg.Frame('List of files',table,visible=True,key='-frame1-')], [sg.Text('Choose your exchange:'), sg.Combo(['Binance','Coinbase','Coinbase Pro','Revolut'], key='-exch-')],
+    layout = [ [sg.Frame('List of files',table,visible=True,key='-frame1-')], [sg.Text('Choose your exchange:'), sg.Combo(['Binance','Coinbase','CoinbasePro','Revolut'], key='-exch-')],
             [sg.Text('Choose fiat currency:'), sg.Combo(l_currencies, key='-curr-')],
             [sg.Text('Add file with statements:'), sg.InputText(key='-filename-', enable_events=True, visible = False), sg.FileBrowse(file_types=(("Comma Separated Value", "*.csv"),),target='-filename-')],
             [sg.Button('Manage Revolut CSV',key='-manage-', visible = False)],
@@ -120,7 +121,6 @@ window_main, window_revolut, window_manager = sg_main_window(), None, None
 # Event Loop to process "events" and get the "values" of the inputs
 while True:
     windows, event, values = sg.read_all_windows()
-    print(event)
     if event == sg.WIN_CLOSED or event == '-cancel-' or event == '-exit-' or event == '-manexit-': # if user closes window or clicks cancel
         windows.close()
         if windows == window_revolut:
@@ -130,25 +130,38 @@ while True:
         elif windows == window_main:
             break
     elif event == '-filename-': # fill the table in gui
-        report = Report(raport_generator.get_filename(values['-filename-'],False))
-        l_report += [report]
-        r_data = (values['-filename-'],values['-exch-'],values['-curr-'])
-        report.setData(r_data)
-        l_newdata = [ " ".join(r.getData(True)) for r in l_report ] 
-        windows['-table-'].update(values = l_newdata)
-        rev_check = [ r for r in l_report if r.isRevolut() ]
-        if rev_check:
-            windows['-manage-'].update(visible = True)
+        if values['-filename-']:
+            if values['-exch-'] and values['-curr-']:
+                report = Report(raport_generator.get_filename(values['-filename-'],False))
+                l_report += [report]
+                r_data = (values['-filename-'],values['-exch-'],values['-curr-'])
+                report.setData(r_data)
+                l_newdata = [ " ".join(r.getData(True)) for r in l_report ] 
+                windows['-table-'].update(values = l_newdata)
+                rev_check = [ r for r in l_report if r.isRevolut() ]
+                if rev_check:
+                    windows['-manage-'].update(visible = True)
+                windows['-filename-'].update(value='')
+            else:
+                sg.Popup('Set up exchange and currency')
+        else:
+            sg.Popup('File not chosen')
     elif event == '-generate-': # generate report from non-revolut statements
-            for r in l_report:
-                if not r.isRevolut():
-                    r.setReportData(raport_generator.csv_pandas_report(r.getData()))
-                    r.generated = True
+        start_time = extras.timelapse()
+        for r in l_report:
+            if not r.isRevolut():
+                r.setReportData(raport_generator.csv_pandas_report(r.getData()))
+                r.generated = True
+        end_time = extras.timelapse()
+        print(extras.count_time(start_time,end_time))
     elif event == '-out-': # save generated report in folder chosen by user
-        list_report = [r.getReportData() for r in l_report]
-        list_report = [item for sublist in list_report for item in sublist]
-        excel_output = raport_generator.excel_savefile(list_report,values['-out-'])
-        windows['-saved-'].update(excel_output,visible=True)
+        if values['-out-']:
+            list_report = [r.getReportData() for r in l_report]
+            excel_output = raport_generator.excel_savefile(list_report,values['-out-'])
+            windows['-saved-'].update(excel_output,visible=True)
+            windows['-out-'].update(value='')
+        else:
+            sg.Popup('Path not chosen')
     elif event == '-manage-': # generate gui manager for revolut csv
         rev_check = [r.getData() for r in l_report if r.isRevolut()]
         window_manager = sg_revolut_manager(rev_check)
