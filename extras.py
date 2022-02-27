@@ -21,7 +21,7 @@ def convert_to_local_time(str_date, str_exchange):
     utc = datetime.strptime(str_date, '%Y-%m-%d %H:%M:%S')
   elif str_exchange == 'Coinbase':
     utc = datetime.strptime(str_date, '%Y-%m-%dT%H:%M:%SZ')
-  elif str_exchange == 'Coinbase Pro':
+  elif str_exchange == 'CoinbasePro':
     utc = datetime.strptime(str_date, '%Y-%m-%dT%H:%M:%S.%fZ')
 
   utc = utc.replace(tzinfo = from_zone)

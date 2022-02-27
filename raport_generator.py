@@ -5,7 +5,7 @@ import extras
 
 d_exchanges = { 'Binance': ['UTC_Time', 'Operation', 'Coin', 'Change'],
  'Coinbase': ['Timestamp', 'Transaction Type', 'Spot Price Currency', 'Total (inclusive of fees)'],
- 'Coinbase Pro': ['time', 'type', 'amount/balance unit', 'amount'], 'Revolut': ['Completed Date', 'Description', 'Amount', 'Currency'] }
+ 'CoinbasePro': ['time', 'type', 'amount/balance unit', 'amount'], 'Revolut': ['Completed Date', 'Description', 'Amount', 'Currency'] }
 
 l_transactions = ['Buy', 'match', 'fee', 'Transaction Related', 'Small assets exchange BNB', 'Exchange to']
 
@@ -45,8 +45,11 @@ def open_statement(csv_tup, to_dict=True): # open csv file and reads needed info
 
     return output
 
-def calc_val(x,y):
-    return abs(round((x) * (y),2))
+def calc_val(x,y,exchange):
+    if exchange == 'Coinbase':
+        return -(round((x) * (y),2))
+    else:
+        return (round((x) * (y),2))
 
 
 def csv_pandas_report(csv_tup, *args): # create list of dicts with data from csv's
@@ -64,7 +67,7 @@ def csv_pandas_report(csv_tup, *args): # create list of dicts with data from csv
         d_rows[l_fields[2]] = l_contents[d_exchanges[str_exchange][3]]
         d_rows[l_fields[3]] = l_contents[d_exchanges[str_exchange][0]].map(lambda x: extras.convert_to_local_time(x, str_exchange))
         d_rows[[l_fields[5],l_fields[4]]] = [extras.nbp_exchange_rates(a,b,True) for a, b in zip(d_rows[l_fields[3]],d_rows[l_fields[1]])]
-        d_rows[l_fields[6]] = calc_val(pd.to_numeric(d_rows[l_fields[2]]),pd.to_numeric(d_rows[l_fields[5]]))
+        d_rows[l_fields[6]] = calc_val(pd.to_numeric(d_rows[l_fields[2]]),pd.to_numeric(d_rows[l_fields[5]]),str_exchange)
     else:                               # revolut csv
         l_exchange = [str_exchange for x in range(l_contents.shape[0])]
         d_rows[l_fields[0]] = l_exchange
@@ -76,7 +79,7 @@ def csv_pandas_report(csv_tup, *args): # create list of dicts with data from csv
                 print('Not a list!')
         d_rows[l_fields[3]] = l_contents[d_exchanges[str_exchange][0]].map(lambda x: extras.convert_to_local_time(x, str_exchange))
         d_rows[[l_fields[5],l_fields[4]]] = [extras.nbp_exchange_rates(a,b,True) for a, b in zip(d_rows[l_fields[3]],d_rows[l_fields[1]])]
-        d_rows[l_fields[6]] = calc_val(pd.to_numeric(d_rows[l_fields[2]]),pd.to_numeric(d_rows[l_fields[5]]))
+        d_rows[l_fields[6]] = calc_val(pd.to_numeric(d_rows[l_fields[2]]),pd.to_numeric(d_rows[l_fields[5]]),str_exchange)
 
     return d_rows
 
@@ -85,7 +88,11 @@ def excel_savefile(l_content,dirname): # generate file with report
     excel_write_name = os.path.join(dirname, 'Report_' + extras.return_timestamp() + '.xlsx')
     writer = pd.ExcelWriter(excel_write_name)
     df_report = pd.concat(l_content,ignore_index=True)
-    df_report.to_excel(writer, index = False)
+    new_df = pd.DataFrame()
+    new_df['Bought crypto for:'] = [df_report.loc[df_report[l_fields[6]] <= 0,l_fields[6]].sum()]
+    new_df['Sold crypto for:'] = [df_report.loc[df_report[l_fields[6]] >= 0,l_fields[6]].sum()]
+    df_report.to_excel(writer, index = False, sheet_name='Details')
+    new_df.to_excel(writer, index = False, sheet_name='Overall')
     writer.save()
     return excel_write_name
 
